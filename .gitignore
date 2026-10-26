@@ -1,0 +1,5 @@
+applications.csv
+applications_backup.csv
+__pycache__/
+.venv/
+.DS_Store
