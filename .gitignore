@@ -3,3 +3,7 @@ applications_backup.csv
 __pycache__/
 .venv/
 .DS_Store
+job_tracker.db
+*.db-journal
+applications_backup*.csv
+*.db
