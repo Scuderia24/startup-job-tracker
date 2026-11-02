@@ -2,7 +2,8 @@
 
 ## Who I am
 
-- Beginner coder (started a few days ago). I know basic Python, pandas, Streamlit, sqlite3, Git.
+- Beginner coder. I know basic Python, pandas, Streamlit and Git (including branches and `git diff`).
+- SQL so far: SELECT, WHERE, INSERT, UPDATE, DELETE, COUNT, GROUP BY, ORDER BY, IS NULL, `?` placeholders, transactions (`with connection:`).
 - I've often copied code without fully understanding it. My priority now is **understanding and independence**, not just working code.
 - Don't assume I understand a concept just because it's already in my code.
 - Goal: become a technically capable startup operator (BizOps / GTM / RevOps), not a software engineer. Technical work should support my job search.
@@ -28,19 +29,23 @@
 ## Safety and honesty
 
 - Never say something works until I've run it and confirmed.
-- Before any change to data storage, help me back up `applications.csv` first.
-- Never delete or overwrite `applications.csv` or `job_tracker.db` without asking.
-- Never commit personal data (`applications.csv`, backups, `*.db`). The repo is public.
+- Before any change to data storage, help me back up `tracker.db` and `applications.csv` first.
+- Never delete or overwrite `tracker.db`, `applications.csv` or `job_tracker.db` without asking.
+- Never commit personal data (`*.db`, `applications.csv`, backups, `.claude/`, `.agents/`). The repo is public.
+- Use a separate branch for big changes. Run `git status` before every commit and add files by name, never `git add .`.
 - Prefer the simplest solution that works. Explain limitations honestly.
 
 ## Project facts
 
-- `app.py`: main Streamlit app (editable table, autosave, metrics, filters, deadline alerts). Stores data in `applications.csv`.
+- `app.py`: main Streamlit app (editable table, autosave, metrics, filters, deadline alerts).
+  - Storage: **`tracker.db` (SQLite) is the source of truth.** Table `applications` with columns id (TEXT, UUID primary key), date, company, role, status, location, job_link, deadline, notes.
+  - Only `load_applications()` and `save_applications()` touch storage. Saves rewrite the whole table in one transaction, then `save_csv_backup()` writes `applications.csv` as a backup. Keep the backup unless I say otherwise.
+  - If `tracker.db` is missing, the app stops with a message (deliberately, so an empty start can't overwrite the CSV backup).
+- `import_csv.py`: rebuilds `tracker.db` from `applications.csv` (DROP + CREATE) and checks row counts. Only run deliberately.
+- `pipeline_dashboard.py`: Streamlit reporting page using SQL queries on `tracker.db`. `pipeline_report.py`: terminal version.
 - `main.py`: original command-line tracker.
-- `database_test.py`: creates `job_tracker.db` with table `applications (id INTEGER PRIMARY KEY, company TEXT, role TEXT, status TEXT)`.
-- `sql_practice.py`: SQL practice script.
+- `job_tracker.db` + `database_test.py`, `sql_practice.py`, `delete_practice.py`, `aggregation_practice.py`: SQL practice only, separate from the real data.
 - Run the app with `streamlit run app.py` (with `.venv` activated).
-- **Keep the CSV version of the app working.** SQLite is being learned and tested separately; don't replace CSV storage until it's been tested and I've agreed.
 
 ## Time limits
 
@@ -48,8 +53,8 @@
 
 ## Current position (update this as I progress)
 
-Day 3, Step 2: SQL fundamentals.
+Day 3 complete: SQL fundamentals, CSV imported into SQLite, pipeline dashboard built, and `app.py` migrated to SQLite (7-point test checklist passed, merged to main). README updated (v0.7).
 
-- Done: INSERT, SELECT, WHERE, UPDATE (verifying UPDATE by id now).
-- Next: DELETE (also clean duplicate practice rows), COUNT, GROUP BY.
-- Then: import `applications.csv` into SQLite (without changing app.py) → practise queries → connect SQLite to Streamlit → switch storage only after testing → document on GitHub.
+- Small loose ends: update the sidebar version in `app.py` to 0.7; let `import_csv.py` create an empty table when there is no CSV.
+- Possible stretch: autosave updates only the changed rows (`UPDATE ... WHERE id = ?`) instead of rewriting the table.
+- Next: **Project 2** (likely an AI-powered company research tool). Don't keep polishing the tracker.

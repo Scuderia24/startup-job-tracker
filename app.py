@@ -1,8 +1,8 @@
+
 from pathlib import Path
 from datetime import date
 from uuid import uuid4
 import os
-import sqlite3
 import tempfile
 
 import pandas as pd
@@ -20,7 +20,6 @@ st.set_page_config(
 )
 
 CSV_FILE = Path(__file__).parent / "applications.csv"
-DATABASE_FILE = Path(__file__).parent / "tracker.db"
 
 STATUSES = [
     "Applied",
@@ -86,8 +85,15 @@ TODAY = date.today()
 # 2. SAVE DATA
 # ==========================================
 
-def save_csv_backup(saved):
-    """Write the table to applications.csv as a backup (temp file + swap)."""
+def save_applications(df):
+
+    saved = df.reindex(columns=COLUMNS).copy()
+
+    for column in DATE_COLUMNS:
+        saved[column] = pd.to_datetime(
+            saved[column],
+            errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
 
     temp_path = None
 
@@ -111,66 +117,19 @@ def save_csv_backup(saved):
             os.remove(temp_path)
 
 
-def save_applications(df):
-
-    saved = df.reindex(columns=COLUMNS).copy()
-
-    for column in DATE_COLUMNS:
-        saved[column] = pd.to_datetime(
-            saved[column],
-            errors="coerce"
-        ).dt.strftime("%Y-%m-%d")
-
-    # pandas marks missing values as NA/NaN; SQLite needs Python's None
-    saved = saved.astype(object).where(saved.notna(), None)
-
-    rows = saved.values.tolist()
-
-    # Save the whole table in ONE transaction:
-    # "with connection" commits if everything succeeds,
-    # and undoes everything if anything fails halfway.
-    connection = sqlite3.connect(DATABASE_FILE)
-
-    try:
-        with connection:
-            connection.execute("DELETE FROM applications")
-            connection.executemany(
-                "INSERT INTO applications "
-                "(id, date, company, role, status, location, job_link, deadline, notes) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                rows
-            )
-    finally:
-        connection.close()
-
-    # Safety net while testing: keep the CSV up to date too
-    save_csv_backup(saved)
-
-
 # ==========================================
 # 3. LOAD DATA
 # ==========================================
 
 def load_applications():
 
-    # Refuse to run without the database, rather than starting empty
-    # (an empty start would then overwrite your CSV backup on the next save)
-    if not DATABASE_FILE.exists():
-        st.error(
-            "tracker.db not found. Run `python import_csv.py` first."
-        )
-        st.stop()
-
-    connection = sqlite3.connect(DATABASE_FILE)
-
-    try:
-        df = pd.read_sql_query(
-            "SELECT * FROM applications",
-            connection,
+    if CSV_FILE.exists():
+        df = pd.read_csv(
+            CSV_FILE,
             dtype="string"
         )
-    finally:
-        connection.close()
+    else:
+        df = pd.DataFrame(columns=COLUMNS)
 
     changed = False
 
@@ -369,7 +328,7 @@ with st.sidebar:
     st.caption("Your personal career dashboard")
     st.divider()
     st.caption("Built with Python + Streamlit")
-    st.caption("Version 0.6")
+    st.caption("Version 0.7")
 
 
 # ==========================================
