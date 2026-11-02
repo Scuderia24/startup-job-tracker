@@ -7,3 +7,5 @@ job_tracker.db
 *.db-journal
 applications_backup*.csv
 *.db
+.claude/
+.agents/
